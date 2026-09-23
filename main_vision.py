@@ -148,10 +148,20 @@ def draw_hud(frame: cv2.Mat, gesture: str, conf: float, raw_stream: List[Token],
         cy += 25
 
     # --- Draw Program Stream ---
-    # Raw stream
+    # Safe character limit for the bottom bar (approx 13px per char)
+    max_chars_per_line = int((w - sidebar_w - 30) / 13) 
+
+    # Raw stream (Truncate to prevent overlap)
     raw_str = " > ".join([t.type.name for t in raw_stream[-6:]])
-    if len(raw_stream) > 6: raw_str = "... " + raw_str
-    cv2.putText(frame, f"Raw: {raw_str}", (15, h - bottom_h + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (180, 180, 180), 1)
+    if len(raw_stream) > 6: 
+        raw_str = "... " + raw_str
+        
+    full_raw_text = f"Raw: {raw_str}"
+    if len(full_raw_text) > max_chars_per_line:
+        # Keep only the end of the raw stream so we see the newest tokens
+        full_raw_text = "Raw: ..." + full_raw_text[-(max_chars_per_line - 10):]
+        
+    cv2.putText(frame, full_raw_text, (15, h - bottom_h + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (180, 180, 180), 1)
 
     # Lexed Stream (Wrapped dynamically based on available width)
     lexed_names = [
@@ -159,8 +169,6 @@ def draw_hud(frame: cv2.Mat, gesture: str, conf: float, raw_stream: List[Token],
         for t in lexed_stream if t.type != TokenType.EOF
     ]
     
-    # 11px per char approx at scale 0.55
-    max_chars_per_line = int((w - sidebar_w - 30) / 11) 
     y_offset = h - bottom_h + 55
     current_line = "AST: "
     for name in lexed_names:
