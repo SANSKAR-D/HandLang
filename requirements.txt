@@ -1,0 +1,17 @@
+# GazeCursor – pinned dependencies
+# Install: pip install -r requirements.txt
+
+# --- Core ---
+opencv-python==4.10.0.84
+mediapipe==0.10.14
+numpy==1.26.4
+
+# --- Gaze model ---
+scikit-learn==1.5.2
+joblib==1.4.2
+
+# --- Cursor / hotkeys ---
+pynput==1.7.7
+
+# --- Testing ---
+pytest==8.3.4

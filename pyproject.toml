@@ -1,0 +1,18 @@
+[project]
+name = "gazecursor"
+version = "0.1.0"
+description = "Webcam-only gaze-controlled mouse with blink clicking"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "joblib==1.4.2",
+    "mediapipe==0.10.14",
+    "numpy==1.26.4",
+    "opencv-python==4.10.0.84",
+    "pynput==1.7.7",
+    "pytest==8.3.4",
+    "scikit-learn==1.5.2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
