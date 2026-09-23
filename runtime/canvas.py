@@ -16,14 +16,17 @@ class TurtleCanvas:
     def __init__(self) -> None:
         self.root = tk.Tk()
         self.root.title("HandLang Canvas")
+        self.root.configure(bg="#050505")  # Match canvas background
+        
         self.canvas = tk.Canvas(
             self.root,
             width=config.CANVAS_WIDTH,
             height=config.CANVAS_HEIGHT,
             bg="#050505",  # Hacker Dark background
-            highlightthickness=0
+            highlightthickness=0,
+            borderwidth=0
         )
-        self.canvas.pack()
+        self.canvas.pack(fill=tk.BOTH, expand=True)
         
         self.commands_to_draw = []
         self.draw_index = 0
