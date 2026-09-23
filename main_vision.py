@@ -9,6 +9,7 @@ import sys
 from typing import List
 
 import cv2
+import numpy as np
 
 import config
 from language.interpreter import Interpreter, InterpreterError, StepLimitExceeded
@@ -71,44 +72,120 @@ def execute_program(lexed_tokens: List[Token], canvas: TurtleCanvas) -> str:
     return ""
 
 
-def draw_hud(frame: cv2.Mat, gesture: str, conf: float, raw_stream: List[Token], lexed_stream: List[Token], error_msg: str) -> None:
-    """Draw the heads-up display on the OpenCV frame."""
-    # Active gesture
-    color = (0, 255, 0) if conf >= config.STABILIZER_CONFIDENCE_THRESHOLD else (0, 0, 255)
-    cv2.putText(frame, f"Gesture: {gesture} ({conf:.2f})", (10, 30),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
-                
-    # Raw stream
-    raw_str = " ".join([t.type.name for t in raw_stream[-6:]])  # Show last 6
-    if len(raw_stream) > 6: raw_str = "... " + raw_str
-    cv2.putText(frame, f"Raw: {raw_str}", (10, 70),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
+def draw_hud(frame: cv2.Mat, gesture: str, conf: float, raw_stream: List[Token], lexed_stream: List[Token], error_msg: str, landmarks: np.ndarray) -> None:
+    """Draw a highly structured, professional UI layout on the OpenCV frame."""
+    h, w, _ = frame.shape
+    overlay = frame.copy()
 
-    # Lexed stream (what the parser actually sees) - Wrapped across lines!
+    # Layout Dimensions
+    sidebar_w = 200
+    bottom_h = 130
+    
+    # 1. Right Sidebar (Cheat Sheet)
+    cv2.rectangle(overlay, (w - sidebar_w, 0), (w, h), (20, 20, 25), -1)
+    
+    # 2. Bottom Bar (Program Stream)
+    cv2.rectangle(overlay, (0, h - bottom_h), (w - sidebar_w, h), (25, 25, 30), -1)
+    
+    # 3. Top-Left Pill (Active Gesture)
+    cv2.rectangle(overlay, (10, 10), (320, 50), (30, 30, 35), -1)
+    
+    # Apply alpha blending for glassmorphism
+    cv2.addWeighted(overlay, 0.85, frame, 0.15, 0, frame)
+
+    # --- Draw 3D Hand Skeleton ---
+    if landmarks is not None:
+        HAND_CONNECTIONS = [
+            (0, 1), (1, 2), (2, 3), (3, 4),  # Thumb
+            (0, 5), (5, 6), (6, 7), (7, 8),  # Index
+            (5, 9), (9, 10), (10, 11), (11, 12),  # Middle
+            (9, 13), (13, 14), (14, 15), (15, 16),  # Ring
+            (13, 17), (17, 18), (18, 19), (19, 20),  # Pinky
+            (0, 17)  # Wrist to pinky base
+        ]
+        for p1, p2 in HAND_CONNECTIONS:
+            x1, y1 = int(landmarks[p1][0] * w), int(landmarks[p1][1] * h)
+            x2, y2 = int(landmarks[p2][0] * w), int(landmarks[p2][1] * h)
+            cv2.line(frame, (x1, y1), (x2, y2), (0, 255, 65), 2)  # Hacker Green
+            
+        for lm in landmarks:
+            cx, cy = int(lm[0] * w), int(lm[1] * h)
+            cv2.circle(frame, (cx, cy), 4, (200, 255, 200), -1)
+
+    # --- Draw Active Gesture ---
+    color = (0, 255, 100) if conf >= config.STABILIZER_CONFIDENCE_THRESHOLD else (0, 0, 255)
+    cv2.putText(frame, f"Active: {gesture}", (20, 37), cv2.FONT_HERSHEY_DUPLEX, 0.6, color, 1)
+
+    # --- Draw Cheat Sheet ---
+    cv2.putText(frame, "LEFT HAND", (w - sidebar_w + 15, 30), cv2.FONT_HERSHEY_DUPLEX, 0.55, (255, 255, 255), 1)
+    left_lines = [
+        "Point : FWD",
+        "Peace : TURN",
+        "Palm  : REPEAT",
+        "Fist  : END",
+        "Spider: PEN",
+        "ThumbU: RUN",
+        "ThumbD: UNDO"
+    ]
+    cy = 55
+    for text in left_lines:
+        cv2.putText(frame, text, (w - sidebar_w + 15, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (150, 255, 150), 1)
+        cy += 25
+        
+    cv2.putText(frame, "RIGHT HAND", (w - sidebar_w + 15, cy + 15), cv2.FONT_HERSHEY_DUPLEX, 0.55, (255, 255, 255), 1)
+    cy += 45
+    right_lines = [
+        "Fist  : 0",
+        "Point : 1",
+        "Peace : 2",
+        "Spider: 3",
+        "ThumbU: 4",
+        "Palm  : 5",
+        "ThumbD: 6"
+    ]
+    for text in right_lines:
+        cv2.putText(frame, text, (w - sidebar_w + 15, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (150, 255, 255), 1)
+        cy += 25
+
+    # --- Draw Program Stream ---
+    # Raw stream
+    raw_str = " > ".join([t.type.name for t in raw_stream[-6:]])
+    if len(raw_stream) > 6: raw_str = "... " + raw_str
+    cv2.putText(frame, f"Raw: {raw_str}", (15, h - bottom_h + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (180, 180, 180), 1)
+
+    # Lexed Stream (Wrapped dynamically based on available width)
     lexed_names = [
         f"{t.type.name}({t.value})" if t.value is not None else t.type.name
         for t in lexed_stream if t.type != TokenType.EOF
     ]
     
-    max_chars_per_line = 40
-    y_offset = 110
-    current_line = "Prog: "
-    
+    # 11px per char approx at scale 0.55
+    max_chars_per_line = int((w - sidebar_w - 30) / 11) 
+    y_offset = h - bottom_h + 55
+    current_line = "AST: "
     for name in lexed_names:
         if len(current_line) + len(name) + 1 > max_chars_per_line:
-            cv2.putText(frame, current_line, (10, y_offset),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
-            y_offset += 30
-            current_line = "      " + name
+            cv2.putText(frame, current_line, (15, y_offset), cv2.FONT_HERSHEY_DUPLEX, 0.55, (255, 220, 0), 1)
+            y_offset += 25
+            current_line = "     " + name
         else:
-            current_line += " " + name if current_line != "Prog: " else name
+            current_line += " " + name if current_line != "AST: " else name
             
-    cv2.putText(frame, current_line, (10, y_offset),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
-                
+    cv2.putText(frame, current_line, (15, y_offset), cv2.FONT_HERSHEY_DUPLEX, 0.55, (255, 220, 0), 1)
+    
+    # --- Draw Critical Errors ---
     if error_msg:
-        cv2.putText(frame, error_msg, (10, y_offset + 40),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        # Truncate error message if it's too long
+        display_err = error_msg
+        if len(display_err) > 60:
+            display_err = display_err[:57] + "..."
+        display_err += " (Press 'c' or UNDO to clear)"
+            
+        err_w = min(w - 20, len(display_err) * 11)
+        cv2.rectangle(overlay, (int(w/2) - int(err_w/2) - 10, int(h/2) - 30), (int(w/2) + int(err_w/2) + 10, int(h/2) + 10), (0, 0, 200), -1)
+        # Re-apply blending just for the error box so it pops
+        cv2.addWeighted(overlay, 0.9, frame, 0.1, 0, frame)
+        cv2.putText(frame, display_err, (int(w/2) - int(err_w/2), int(h/2) - 5), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 1)
 
 
 def main() -> None:
@@ -185,7 +262,7 @@ def main() -> None:
                         lexed_tokens = lex(raw_tokens)
 
             # 4. Draw HUD and Canvas
-            draw_hud(display, gesture, conf, raw_tokens, lexed_tokens, last_error)
+            draw_hud(display, gesture, conf, raw_tokens, lexed_tokens, last_error, landmarks)
             cv2.imshow("HandLang Live", display)
             
             # Non-blocking canvas update
@@ -196,8 +273,13 @@ def main() -> None:
                 # Thrown if user closes the Tkinter window manually
                 break
 
-            if cv2.waitKey(1) == 27:  # ESC
+            key = cv2.waitKey(1)
+            if key == 27:  # ESC
                 break
+            elif key == ord('c'):
+                last_error = ""
+                raw_tokens.clear()
+                lexed_tokens.clear()
 
     finally:
         cap.release()
