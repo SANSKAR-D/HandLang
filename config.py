@@ -1,76 +1,59 @@
-"""GazeCursor – all tunable constants.
+"""HandLang – all tunable constants.
 
-Every magic number lives here.  Modules import from config instead of
-hard-coding values.  Grouped by subsystem; later phases append sections.
+Every magic number lives here. Modules import from config instead of
+hard-coding values.
 """
-
-# ---------------------------------------------------------------------------
-# Camera
-# ---------------------------------------------------------------------------
-CAMERA_INDEX: int = 0
-"""Default video-capture device index (0 = first webcam)."""
-
-FPS_TEST_FRAME_COUNT: int = 300
-"""Number of raw frames grabbed when measuring baseline FPS (Phase 0)."""
 
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
 LOG_LEVEL: str = "INFO"
-"""Root logger level.  Set to 'DEBUG' for verbose diagnostics."""
+"""Root logger level."""
 
 LOG_FORMAT: str = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 """Format string for log messages."""
 
 # ---------------------------------------------------------------------------
-# MediaPipe Face Mesh
+# Camera (Phases 4+)
 # ---------------------------------------------------------------------------
-FACE_MESH_MAX_FACES: int = 1
-"""Maximum number of faces to detect."""
+CAMERA_INDEX: int = 0
+"""Default video-capture device index."""
 
-FACE_MESH_REFINE_LANDMARKS: bool = True
-"""Must be True to output the 468-477 iris landmarks."""
-
-FACE_MESH_MIN_DETECTION_CONFIDENCE: float = 0.5
-"""Minimum confidence value ([0.0, 1.0]) for face detection to be considered successful."""
-
-FACE_MESH_MIN_TRACKING_CONFIDENCE: float = 0.5
-"""Minimum confidence value ([0.0, 1.0]) for face tracking to be considered successful."""
+MP_MIN_DETECTION_CONFIDENCE: float = 0.7
+MP_MIN_TRACKING_CONFIDENCE: float = 0.5
 
 # ---------------------------------------------------------------------------
-# UI / Overlay
+# Stabilizer (Phase 5+)
 # ---------------------------------------------------------------------------
-COLOR_EYE_CONTOUR: tuple[int, int, int] = (0, 255, 0)
-"""Color for drawing eye contours (BGR)."""
+STABILIZER_FRAMES_REQUIRED: int = 15
+"""Consecutive frames of the same gesture to emit a token (~0.5 s at 30 FPS)."""
 
-COLOR_IRIS: tuple[int, int, int] = (0, 0, 255)
-"""Color for drawing iris centers (BGR)."""
-
-COLOR_TEXT: tuple[int, int, int] = (255, 255, 255)
-"""Color for overlay text (BGR)."""
-
-COLOR_WARNING: tuple[int, int, int] = (0, 0, 255)
-"""Color for warning text like 'No face detected' (BGR)."""
+STABILIZER_CONFIDENCE_THRESHOLD: float = 0.8
+"""Minimum classifier confidence to consider a frame."""
 
 # ---------------------------------------------------------------------------
-# Blink and Features
+# Interpreter
 # ---------------------------------------------------------------------------
-BASELINE_DURATION_SECONDS: float = 3.0
-"""How long to collect EAR data to establish the user's baseline."""
+MAX_INTERPRETER_STEPS: int = 10_000
+"""Hard cap on interpreter steps to prevent infinite loops."""
 
-EAR_CLOSE_THRESHOLD_RATIO: float = 0.70
-"""Multiplier on baseline EAR. If EAR drops below this, eye is closing."""
+# ---------------------------------------------------------------------------
+# Canvas
+# ---------------------------------------------------------------------------
+CANVAS_WIDTH: int = 800
+"""Turtle canvas width in pixels."""
 
-EAR_OPEN_THRESHOLD_RATIO: float = 0.80
-"""Multiplier on baseline EAR. If EAR rises above this, eye is opening."""
+CANVAS_HEIGHT: int = 600
+"""Turtle canvas height in pixels."""
 
-BLINK_MIN_DELIBERATE_DURATION: float = 0.25
-"""Minimum seconds for a blink to be considered deliberate (vs natural)."""
+CANVAS_BG_COLOR: str = "black"
+"""Canvas background color."""
 
-BLINK_MAX_DELIBERATE_DURATION: float = 0.80
-"""Maximum seconds for a blink to be considered deliberate."""
-
-DOUBLE_BLINK_TIMEOUT: float = 1.0
-"""Seconds to wait after a deliberate blink for a second one (for right click)."""
-
-
+# ---------------------------------------------------------------------------
+# Turtle colors (indexed by COLOR command argument)
+# ---------------------------------------------------------------------------
+TURTLE_COLORS: list[str] = [
+    "white", "red", "green", "blue",
+    "yellow", "cyan", "magenta", "orange",
+]
+"""Available colors for the turtle pen."""

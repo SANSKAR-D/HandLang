@@ -1,16 +1,18 @@
 [project]
-name = "gazecursor"
+name = "handlang"
 version = "0.1.0"
-description = "Webcam-only gaze-controlled mouse with blink clicking"
+description = "A programming language you write with your hands"
 requires-python = ">=3.10,<3.13"
 dependencies = [
     "joblib==1.4.2",
     "mediapipe==0.10.14",
     "numpy==1.26.4",
     "opencv-python==4.10.0.84",
-    "pynput==1.7.7",
     "pytest==8.3.4",
     "scikit-learn==1.5.2",
+    "torch>=2.14.0",
+    "torchvision>=0.29.0",
+    "tqdm>=4.70.1",
 ]
 
 [tool.pytest.ini_options]

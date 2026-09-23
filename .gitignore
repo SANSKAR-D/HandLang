@@ -15,15 +15,15 @@ env/
 *.swp
 *.swo
 
-# Distribution / packaging
+# Distribution
 *.egg-info/
 dist/
 build/
 
 # Project-specific
 models/*.joblib
-results/*.csv
-results/*.png
+data/*.csv
+data/*.json
 
 # OS
 .DS_Store
