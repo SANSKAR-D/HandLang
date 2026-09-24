@@ -70,7 +70,14 @@ class Assign:
     value: Expression
 
 
-Statement = Union[Forward, Turn, PenToggle, Color, Repeat, Assign]
+@dataclass
+class Inc:
+    """Increment variable ``v{var_id}`` by *amount*. (INC <var_id> <amount>)"""
+    var_id: int
+    amount: Expression
+
+
+Statement = Union[Forward, Turn, PenToggle, Color, Repeat, Assign, Inc]
 
 
 # ── Program (root node) ────────────────────────────────────────────────────

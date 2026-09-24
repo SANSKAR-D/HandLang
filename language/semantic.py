@@ -41,6 +41,10 @@ def check(program: ast.Program) -> list[str]:
         elif isinstance(stmt, ast.Assign):
             check_expr(stmt.value)
             defined_vars.add(f"v{stmt.var_id}")
+        elif isinstance(stmt, ast.Inc):
+            if f"v{stmt.var_id}" not in defined_vars:
+                errors.append(f"INC: variable 'v{stmt.var_id}' used before assignment")
+            check_expr(stmt.amount)
         elif isinstance(stmt, ast.PenToggle):
             pass
         else:

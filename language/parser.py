@@ -97,6 +97,8 @@ class Parser:
             return self._parse_repeat()
         if tt == TokenType.VAR:
             return self._parse_assign()
+        if tt == TokenType.INC:
+            return self._parse_inc()
 
         raise ParseError(
             f"Unexpected token {tt.name}; expected a statement",
@@ -137,6 +139,13 @@ class Parser:
         var_id_token = self.expect(TokenType.NUMBER)
         value = self._parse_number()
         return ast.Assign(var_id_token.value, value)
+
+    def _parse_inc(self) -> ast.Inc:
+        """``inc ::= INC NUMBER number``"""
+        self.expect(TokenType.INC)
+        var_id_token = self.expect(TokenType.NUMBER)
+        amount = self._parse_number()
+        return ast.Inc(var_id_token.value, amount)
 
     def _parse_number(self):
         """``number ::= NUMBER | VAR NUMBER``

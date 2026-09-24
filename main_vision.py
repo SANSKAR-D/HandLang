@@ -78,18 +78,18 @@ def draw_hud(frame: cv2.Mat, gesture: str, conf: float, raw_stream: List[Token],
     overlay = frame.copy()
 
     # Layout Dimensions
-    sidebar_w = 200
-    bottom_h = 130
-    
+    sidebar_w = 230     # Wider sidebar to fit all text
+    bottom_h = 120
+
     # 1. Right Sidebar (Cheat Sheet)
     cv2.rectangle(overlay, (w - sidebar_w, 0), (w, h), (20, 20, 25), -1)
-    
+
     # 2. Bottom Bar (Program Stream)
     cv2.rectangle(overlay, (0, h - bottom_h), (w - sidebar_w, h), (25, 25, 30), -1)
-    
+
     # 3. Top-Left Pill (Active Gesture)
-    cv2.rectangle(overlay, (10, 10), (320, 50), (30, 30, 35), -1)
-    
+    cv2.rectangle(overlay, (10, 10), (340, 50), (30, 30, 35), -1)
+
     # Apply alpha blending for glassmorphism
     cv2.addWeighted(overlay, 0.85, frame, 0.15, 0, frame)
 
@@ -107,7 +107,7 @@ def draw_hud(frame: cv2.Mat, gesture: str, conf: float, raw_stream: List[Token],
             x1, y1 = int(landmarks[p1][0] * w), int(landmarks[p1][1] * h)
             x2, y2 = int(landmarks[p2][0] * w), int(landmarks[p2][1] * h)
             cv2.line(frame, (x1, y1), (x2, y2), (0, 255, 65), 2)  # Hacker Green
-            
+
         for lm in landmarks:
             cx, cy = int(lm[0] * w), int(lm[1] * h)
             cv2.circle(frame, (cx, cy), 4, (200, 255, 200), -1)
@@ -116,84 +116,111 @@ def draw_hud(frame: cv2.Mat, gesture: str, conf: float, raw_stream: List[Token],
     color = (0, 255, 100) if conf >= config.STABILIZER_CONFIDENCE_THRESHOLD else (0, 0, 255)
     cv2.putText(frame, f"Active: {gesture}", (20, 37), cv2.FONT_HERSHEY_DUPLEX, 0.6, color, 1)
 
-    # --- Draw Cheat Sheet ---
-    cv2.putText(frame, "LEFT HAND", (w - sidebar_w + 15, 30), cv2.FONT_HERSHEY_DUPLEX, 0.55, (255, 255, 255), 1)
+    # --- Draw Cheat Sheet (smaller font + tighter line spacing to fit everything) ---
+    FONT      = cv2.FONT_HERSHEY_SIMPLEX
+    FONT_HDR  = cv2.FONT_HERSHEY_DUPLEX
+    FS        = 0.42       # item font scale
+    LS        = 19         # line spacing in pixels
+    X         = w - sidebar_w + 10
+
+    cy = 22
+    cv2.putText(frame, "LEFT HAND", (X, cy), FONT_HDR, 0.48, (255, 255, 255), 1)
+    cy += 4
     left_lines = [
-        "Point : FWD",
-        "Peace : TURN",
-        "Palm  : REPEAT",
-        "Fist  : END",
-        "Spider: PEN",
-        "ThumbU: RUN",
-        "ThumbD: UNDO"
+        ("Point ", "FWD",    (150, 255, 150)),
+        ("Peace ", "TURN",   (150, 255, 150)),
+        ("Palm  ", "REPEAT", (150, 255, 150)),
+        ("Fist  ", "END",    (150, 255, 150)),
+        ("Spider", "PEN",    (150, 255, 150)),
+        ("ThumbU", "RUN",    (100, 255, 100)),
+        ("ThumbD", "UNDO",   (100, 200, 255)),
+        ("Pinch ", "COLOR",  (255, 200, 100)),
+        ("Cross ", "INC",    (255, 150, 255)),
     ]
-    cy = 55
-    for text in left_lines:
-        cv2.putText(frame, text, (w - sidebar_w + 15, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (150, 255, 150), 1)
-        cy += 25
-        
-    cv2.putText(frame, "RIGHT HAND", (w - sidebar_w + 15, cy + 15), cv2.FONT_HERSHEY_DUPLEX, 0.55, (255, 255, 255), 1)
-    cy += 45
+    for gesture_name, token_name, clr in left_lines:
+        cy += LS
+        cv2.putText(frame, f"{gesture_name}: {token_name}", (X, cy), FONT, FS, clr, 1)
+
+    cy += LS + 4
+    cv2.putText(frame, "RIGHT HAND", (X, cy), FONT_HDR, 0.48, (255, 255, 255), 1)
     right_lines = [
-        "Fist  : 0",
-        "Point : 1",
-        "Peace : 2",
-        "Spider: 3",
-        "ThumbU: 4",
-        "Palm  : 5",
-        "ThumbD: 6"
+        ("Fist  ", "0 (digit)",   (150, 255, 255)),
+        ("Point ", "1",           (150, 255, 255)),
+        ("Peace ", "2",           (150, 255, 255)),
+        ("Spider", "3",           (150, 255, 255)),
+        ("ThumbU", "4",           (150, 255, 255)),
+        ("Palm  ", "5",           (150, 255, 255)),
+        ("ThumbD", "6",           (150, 255, 255)),
+        ("Pinch ", "VAR",         (255, 200, 100)),
+        ("Cross ", "INC",         (255, 150, 255)),
     ]
-    for text in right_lines:
-        cv2.putText(frame, text, (w - sidebar_w + 15, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (150, 255, 255), 1)
-        cy += 25
+    for gesture_name, token_name, clr in right_lines:
+        cy += LS
+        if cy < h - 5:   # Don't draw past bottom of frame
+            cv2.putText(frame, f"{gesture_name}: {token_name}", (X, cy), FONT, FS, clr, 1)
 
-    # --- Draw Program Stream ---
-    # Safe character limit for the bottom bar (approx 13px per char)
-    max_chars_per_line = int((w - sidebar_w - 30) / 13) 
+    # --- Draw Program Stream (bottom bar) ---
+    avail_w = w - sidebar_w - 20
+    # Approx chars that fit per line at font scale 0.45
+    chars_per_line = int(avail_w / 10)
 
-    # Raw stream (Truncate to prevent overlap)
-    raw_str = " > ".join([t.type.name for t in raw_stream[-6:]])
-    if len(raw_stream) > 6: 
+    # Raw stream: show only last 5 tokens
+    raw_tail = raw_stream[-5:]
+    raw_str = " > ".join([t.type.name for t in raw_tail])
+    if len(raw_stream) > 5:
         raw_str = "... " + raw_str
-        
-    full_raw_text = f"Raw: {raw_str}"
-    if len(full_raw_text) > max_chars_per_line:
-        # Keep only the end of the raw stream so we see the newest tokens
-        full_raw_text = "Raw: ..." + full_raw_text[-(max_chars_per_line - 10):]
-        
-    cv2.putText(frame, full_raw_text, (15, h - bottom_h + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (180, 180, 180), 1)
+    cv2.putText(frame, raw_str, (10, h - bottom_h + 22),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.42, (160, 160, 160), 1)
 
-    # Lexed Stream (Wrapped dynamically based on available width)
+    # Lexed stream: show only the LAST N tokens that fit in 2 lines
+    lexed_tokens = [t for t in lexed_stream if t.type != TokenType.EOF]
     lexed_names = [
         f"{t.type.name}({t.value})" if t.value is not None else t.type.name
-        for t in lexed_stream if t.type != TokenType.EOF
+        for t in lexed_tokens
     ]
-    
-    y_offset = h - bottom_h + 55
-    current_line = "AST: "
-    for name in lexed_names:
-        if len(current_line) + len(name) + 1 > max_chars_per_line:
-            cv2.putText(frame, current_line, (15, y_offset), cv2.FONT_HERSHEY_DUPLEX, 0.55, (255, 220, 0), 1)
-            y_offset += 25
-            current_line = "     " + name
+
+    # Build display from the END backwards to always show newest tokens
+    line1, line2 = "", ""
+    for name in reversed(lexed_names):
+        candidate = name + (" " + line1 if line1 else "")
+        if len(candidate) <= chars_per_line:
+            line1 = candidate
         else:
-            current_line += " " + name if current_line != "AST: " else name
-            
-    cv2.putText(frame, current_line, (15, y_offset), cv2.FONT_HERSHEY_DUPLEX, 0.55, (255, 220, 0), 1)
-    
+            candidate2 = name + (" " + line2 if line2 else "")
+            if not line2 and len(candidate2) <= chars_per_line:
+                line2 = candidate2
+                break
+            else:
+                break
+
+    prefix = "..." if len(lexed_names) > len((line2 + " " + line1).split()) else ""
+    if line2:
+        cv2.putText(frame, prefix + line2, (10, h - bottom_h + 48),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 220, 0), 1)
+        cv2.putText(frame, "    " + line1, (10, h - bottom_h + 72),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 220, 0), 1)
+    else:
+        cv2.putText(frame, prefix + line1, (10, h - bottom_h + 48),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 220, 0), 1)
+
+    # Token count badge
+    total = len(lexed_tokens)
+    cv2.putText(frame, f"[{total} tokens]", (10, h - bottom_h + 98),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (120, 120, 120), 1)
+
     # --- Draw Critical Errors ---
     if error_msg:
-        # Truncate error message if it's too long
-        display_err = error_msg
-        if len(display_err) > 60:
-            display_err = display_err[:57] + "..."
-        display_err += " (Press 'c' or UNDO to clear)"
-            
-        err_w = min(w - 20, len(display_err) * 11)
-        cv2.rectangle(overlay, (int(w/2) - int(err_w/2) - 10, int(h/2) - 30), (int(w/2) + int(err_w/2) + 10, int(h/2) + 10), (0, 0, 200), -1)
-        # Re-apply blending just for the error box so it pops
+        display_err = error_msg[:60] + ("..." if len(error_msg) > 60 else "")
+        display_err += " (c=clear)"
+        err_w = min(w - 20, len(display_err) * 10)
+        cv2.rectangle(overlay,
+                      (int(w/2) - int(err_w/2) - 10, int(h/2) - 30),
+                      (int(w/2) + int(err_w/2) + 10, int(h/2) + 10),
+                      (0, 0, 180), -1)
         cv2.addWeighted(overlay, 0.9, frame, 0.1, 0, frame)
-        cv2.putText(frame, display_err, (int(w/2) - int(err_w/2), int(h/2) - 5), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 1)
+        cv2.putText(frame, display_err,
+                    (int(w/2) - int(err_w/2), int(h/2) - 5),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
 
 
 def main() -> None:

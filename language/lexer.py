@@ -50,9 +50,20 @@ def lex(raw_tokens: list[Token]) -> list[Token]:
         if is_digit_token(token.type):
             digits: list[int] = []
             start_pos = token.position
-            while i < len(raw_tokens) and is_digit_token(raw_tokens[i].type):
+
+            # Special case: after VAR or INC, only the FIRST digit is the variable ID.
+            # Variable IDs are always single digits (v0–v9), so we must NOT
+            # greedily merge them with the value digits that follow.
+            prev_type = output[-1].type if output else None
+            prev_is_var_or_inc = prev_type in (TokenType.VAR, TokenType.INC)
+            if prev_is_var_or_inc:
+                # Emit exactly one digit as the variable ID NUMBER
                 digits.append(DIGIT_VALUES[raw_tokens[i].type])
                 i += 1
+            else:
+                while i < len(raw_tokens) and is_digit_token(raw_tokens[i].type):
+                    digits.append(DIGIT_VALUES[raw_tokens[i].type])
+                    i += 1
 
             number = 0
             for d in digits:

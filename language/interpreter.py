@@ -108,6 +108,8 @@ class Interpreter:
             self._visit_repeat(node)
         elif isinstance(node, ast.Assign):
             self._visit_assign(node)
+        elif isinstance(node, ast.Inc):
+            self._visit_inc(node)
         else:
             raise InterpreterError(f"Unknown node type: {type(node).__name__}")
 
@@ -161,3 +163,13 @@ class Interpreter:
         var_name = f"v{node.var_id}"
         self.variables[var_name] = value
         logger.info("Variable %s = %d", var_name, value)
+
+    def _visit_inc(self, node: ast.Inc) -> None:
+        amount = self._eval_expr(node.amount)
+        var_name = f"v{node.var_id}"
+        if var_name not in self.variables:
+            raise InterpreterError(
+                f"INC: variable '{var_name}' used before assignment"
+            )
+        self.variables[var_name] += amount
+        logger.info("Variable %s += %d → %d", var_name, amount, self.variables[var_name])

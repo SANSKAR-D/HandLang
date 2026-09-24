@@ -23,6 +23,7 @@ class TokenType(Enum):
     IF = auto()
     RUN = auto()
     UNDO = auto()
+    INC = auto()   # Increment a variable: INC <var_id> <amount>
 
     # --- Raw digit tokens (from gesture classifier, combined by lexer) ---
     DIGIT_0 = auto()
@@ -70,6 +71,8 @@ GESTURE_TO_TOKEN: dict[str, TokenType] = {
     "Left_ILoveYou": TokenType.PEN_TOGGLE,
     "Left_Thumb_Up": TokenType.RUN,
     "Left_Thumb_Down": TokenType.UNDO,
+    "Left_OK_Pinch": TokenType.COLOR,   # Pinch = COLOR
+    "Left_Cross": TokenType.INC,          # Cross (index up + middle sideways) = INC
     
     # Right Hand -> Digits (0, 1, 2, 3, 4, 5, 6)
     "Right_Closed_Fist": TokenType.DIGIT_0,
@@ -79,6 +82,8 @@ GESTURE_TO_TOKEN: dict[str, TokenType] = {
     "Right_Thumb_Up": TokenType.DIGIT_4,
     "Right_Open_Palm": TokenType.DIGIT_5,
     "Right_Thumb_Down": TokenType.DIGIT_6,
+    "Right_OK_Pinch": TokenType.VAR,      # Right Pinch = VAR
+    "Right_Cross": TokenType.INC,          # Right Cross = INC (also usable)
 }
 
 
