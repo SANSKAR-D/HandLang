@@ -82,9 +82,9 @@ Your right hand is used to type numbers and variables. Multiple numbers typed co
 
 Type these sequences using your hands, then hit the Left Hand **RUN** gesture to watch the magic!
 
-### 1. The Expanding Spiral (Using Variables & Increment)
-*Code:* `VAR 1 5 REPEAT 20 FORWARD VAR 1 TURN 91 INC 1 3 END RUN`
-*Description:* Sets variable 1 to 5. Loops 20 times, moving forward by variable 1, turning 91 degrees, and incrementing variable 1 by 3 each loop.
+### 1. The Hexagon Spirograph (Advanced)
+*Code:* `REPEAT 12 REPEAT 6 FORWARD 50 TURN 60 END TURN 30 END RUN`
+*Description:* Draws a beautiful mandala of 12 interlocking hexagons.
 
 ### 2. Rainbow Flower
 *Code:* `COLOR 1 REPEAT 6 FORWARD 60 TURN 60 END COLOR 3 REPEAT 6 FORWARD 40 TURN 60 END COLOR 4 REPEAT 6 FORWARD 20 TURN 60 END RUN`
@@ -95,7 +95,7 @@ Type these sequences using your hands, then hit the Left Hand **RUN** gesture to
 *Description:* Draws a classic 5-pointed yellow star (you'll need to enter 144 by typing 1, 4, 4).
 
 ### 4. Galaxy Spiral (The Best One!)
-*Code:* `VAR 1 1 COLOR 2 REPEAT 100 FORWARD VAR 1 TURN 37 INC 1 1 END RUN`
+*Code:* `VAR 1 1 COLOR 2 REPEAT 100 FORWARD VAR 1 TURN 36 INC 1 1 END RUN`
 *Description:* Creates a beautiful organic green spiral pattern that fans out endlessly!
 
 ---
